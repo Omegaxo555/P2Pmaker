@@ -116,3 +116,4 @@ export function OrderBookTable({ orderbook, isLoading }: OrderBookTableProps) {
     </Card>
   );
 }
+

@@ -28,3 +28,4 @@ export async function closeNeo4jDriver(): Promise<void> {
     driver = null;
   }
 }
+

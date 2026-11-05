@@ -33,3 +33,4 @@ export interface UserGraphSummary {
   trades_recientes: TradeNode[];
   contrapartes_bloqueadas: string[];
 }
+

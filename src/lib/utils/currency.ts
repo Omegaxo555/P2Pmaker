@@ -17,3 +17,4 @@ export function formatUSDT(amount: number): string {
 export function formatPercent(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
+

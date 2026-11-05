@@ -34,3 +34,4 @@ export interface ChatMessage {
   parsedJson?: AIResponsePayload | null;
   timestamp: string;
 }
+

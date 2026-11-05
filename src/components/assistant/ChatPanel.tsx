@@ -166,3 +166,4 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
     </Card>
   );
 }
+

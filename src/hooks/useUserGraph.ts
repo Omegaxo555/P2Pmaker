@@ -22,3 +22,4 @@ export function useUserGraph(userId?: string) {
     refresh: mutate,
   };
 }
+

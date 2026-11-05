@@ -62,3 +62,4 @@ Abre en tu navegador [http://localhost:3000](http://localhost:3000) (redirige au
 1. **Comisión Maker Binance P2P**: 0.25% por orden.
 2. **Fórmula Tasa Compra Máxima**: `Tasa_Venta_Actual / (1 + Margen_Deseado + 0.0025)`.
 3. **Protocolo Titular a Titular**: Advertencia activa anti-triangulación en todas las recomendaciones.
+

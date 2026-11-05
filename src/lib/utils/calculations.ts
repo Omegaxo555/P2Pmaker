@@ -23,3 +23,4 @@ export function calcularMargenNeto(
   const spreadNeto = spreadBruto - (comisionMaker * 2); // entrada y salida
   return Number((spreadNeto * 100).toFixed(2));
 }
+

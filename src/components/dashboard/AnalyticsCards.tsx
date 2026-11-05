@@ -82,3 +82,4 @@ export function AnalyticsCards({ analytics }: AnalyticsCardsProps) {
     </div>
   );
 }
+

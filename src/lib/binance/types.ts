@@ -80,3 +80,4 @@ export interface OrderBookSummary {
   sellOrders: BinanceP2PItem[];
   timestamp: string;
 }
+
