@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AnalyticsCards } from '@/components/dashboard/AnalyticsCards';
 import { TradeRecommendation } from '@/components/dashboard/TradeRecommendation';
 import { ArbitrageCalculator } from '@/components/dashboard/ArbitrageCalculator';
@@ -8,35 +8,34 @@ import { RiskAndLimitsWidget } from '@/components/dashboard/RiskAndLimitsWidget'
 import { QuickTradeLogger } from '@/components/dashboard/QuickTradeLogger';
 import { Neo4jGraphViewer } from '@/components/dashboard/Neo4jGraphViewer';
 import { OrderBookTable } from '@/components/dashboard/OrderBookTable';
-import { ChatPanel } from '@/components/assistant/ChatPanel';
 import { Badge } from '@/components/ui/Badge';
 import { useOrderBook } from '@/hooks/useOrderBook';
 import { useUserGraph } from '@/hooks/useUserGraph';
-import type { FinancialAssistantResponse } from '@/types/analytics';
 
 export default function DashboardPage() {
   const { orderbook, isLoading: isBookLoading, refresh: refreshBook } = useOrderBook();
   const { graph, refresh: refreshGraph } = useUserGraph();
 
-  // Estado financiero actualizado por las respuestas de Gemini y el Grafo
-  const [financialData, setFinancialData] = useState<FinancialAssistantResponse | null>(null);
-
-  const handleNewAIResponse = (data: FinancialAssistantResponse) => {
-    setFinancialData(data);
-  };
-
   const handleTradeSaved = () => {
     refreshGraph();
   };
 
-  // Usar balance real del grafo o del asistente
-  const controlDiario = financialData?.control_diario_real || {
+  // Balanza real obtenida del grafo del usuario
+  const controlDiario = {
     fecha: graph?.cierre_diario_actual?.fecha || new Date().toISOString().split('T')[0],
     ordenes_completadas: graph?.cierre_diario_actual?.ordenes_totales || 0,
     capital_rotado_usdt: graph?.cierre_diario_actual?.capital_rotado_usdt || 0,
     ganancia_neta_real_usdt: graph?.cierre_diario_actual?.ganancia_neta_usdt || 0,
     ganancia_neta_real_ves: graph?.cierre_diario_actual?.ganancia_neta_ves || 0,
     comisiones_pagadas_usdt: graph?.cierre_diario_actual?.comisiones_pagadas_usdt || 0,
+  };
+
+  // Recomendación de mercado basada estrictamente en la profundidad de la API
+  const recomendacionMercado = {
+    tasa_compra_sugerida: orderbook?.bestBuyPrice || 0,
+    tasa_venta_sugerida: orderbook?.bestSellPrice || 0,
+    spread_teorico_porc: orderbook?.spreadPercent || 0,
+    requiere_confirmacion_usuario: true,
   };
 
   return (
@@ -91,44 +90,34 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content Dashboard */}
+      {/* Main Content Dashboard - Vista completa a ancho completo */}
       <main className="flex-1 p-4 lg:p-6 max-w-[1750px] w-full mx-auto space-y-5">
         {/* Balanza Diaria de Ganancias y Control Financiero Real */}
         <AnalyticsCards control={controlDiario} />
 
-        {/* Layout en 2 columnas: Analítica/Trading + Chat Asistente */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Columna Izquierda: Suite de Operaciones Reales (7 cols) */}
-          <div className="lg:col-span-7 space-y-5">
-            {/* Variables de Mercado Externas (Binance API) */}
-            <TradeRecommendation recommendation={financialData?.recomendacion_mercado_api} />
+        {/* Variables de Mercado Externas (Binance API) */}
+        <TradeRecommendation recommendation={recomendacionMercado} />
 
-            {/* Calculadora Táctica de Ciclo Maker */}
-            <ArbitrageCalculator
-              currentBuyPrice={orderbook?.bestBuyPrice}
-              currentSellPrice={orderbook?.bestSellPrice}
-            />
+        {/* Grid de 2 Columnas para Herramientas de Cálculo y Registro */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Calculadora Táctica de Ciclo Maker */}
+          <ArbitrageCalculator
+            currentBuyPrice={orderbook?.bestBuyPrice}
+            currentSellPrice={orderbook?.bestSellPrice}
+          />
 
-            {/* Monitoreo de Límites y Cupos Bancarios Reales */}
-            <RiskAndLimitsWidget graph={graph} limitesFromAI={financialData?.estado_limites_banco} />
-
-            {/* Módulo de Registro: Ofertas Maker (CREATE_AD) y Órdenes Reales (EXECUTE_ORDER) */}
-            <QuickTradeLogger graph={graph} onTradeSaved={handleTradeSaved} />
-
-            {/* Visualizador del Grafo Neo4j (Memoria & Telemetría Real) */}
-            <Neo4jGraphViewer />
-
-            {/* Libro P2P Binance en Vivo (Variables Volátiles) */}
-            <OrderBookTable orderbook={orderbook} isLoading={isBookLoading} />
-          </div>
-
-          {/* Columna Derecha: Asistente Financiero y Auditoría de Cierre (5 cols) */}
-          <div className="lg:col-span-5">
-            <div className="sticky top-20">
-              <ChatPanel onNewAIResponse={handleNewAIResponse} />
-            </div>
-          </div>
+          {/* Módulo de Registro: Ofertas Maker (CREATE_AD) y Órdenes Reales (EXECUTE_ORDER) */}
+          <QuickTradeLogger graph={graph} onTradeSaved={handleTradeSaved} />
         </div>
+
+        {/* Monitoreo de Límites y Cupos Bancarios Reales */}
+        <RiskAndLimitsWidget graph={graph} />
+
+        {/* Visualizador del Grafo Neo4j (Memoria & Telemetría Real) */}
+        <Neo4jGraphViewer />
+
+        {/* Libro P2P Binance en Vivo (Variables Volátiles) */}
+        <OrderBookTable orderbook={orderbook} isLoading={isBookLoading} />
       </main>
     </div>
   );
