@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ChatMessage } from '@/types/analytics';
 import { Badge } from '@/components/ui/Badge';
 import { formatVES } from '@/lib/utils/currency';
@@ -11,6 +11,18 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const [formattedTime, setFormattedTime] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      const d = new Date(message.timestamp);
+      setFormattedTime(
+        d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+      );
+    } catch {
+      setFormattedTime('');
+    }
+  }, [message.timestamp]);
 
   return (
     <div className={`flex flex-col mb-4 ${isUser ? 'items-end' : 'items-start'}`}>
@@ -19,7 +31,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           {isUser ? 'Tú' : '🤖 P2P Flow AI'}
         </span>
         <span className="text-[10px] text-muted/70">
-          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {formattedTime}
         </span>
       </div>
 
