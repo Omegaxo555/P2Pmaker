@@ -7,6 +7,7 @@ import { TradeRecommendation } from '@/components/dashboard/TradeRecommendation'
 import { ArbitrageCalculator } from '@/components/dashboard/ArbitrageCalculator';
 import { RiskAndLimitsWidget } from '@/components/dashboard/RiskAndLimitsWidget';
 import { QuickTradeLogger } from '@/components/dashboard/QuickTradeLogger';
+import { Neo4jGraphViewer } from '@/components/dashboard/Neo4jGraphViewer';
 import { OrderBookTable } from '@/components/dashboard/OrderBookTable';
 import { ChatPanel } from '@/components/assistant/ChatPanel';
 import { Badge } from '@/components/ui/Badge';
@@ -102,6 +103,9 @@ export default function DashboardPage() {
 
             {/* Formulario de Registro Rápido para retroalimentar el Grafo Neo4j */}
             <QuickTradeLogger graph={graph} onTradeSaved={handleTradeSaved} />
+
+            {/* Visualizador del Grafo Neo4j (Nodos y Relaciones de Memoria) */}
+            <Neo4jGraphViewer />
 
             {/* Gráfica de Rendimiento en Recharts */}
             <PerformanceChart data={aiData?.grafica_rendimiento} />

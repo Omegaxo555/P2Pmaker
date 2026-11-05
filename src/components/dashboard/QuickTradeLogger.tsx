@@ -236,3 +236,4 @@ export function QuickTradeLogger({ graph, onTradeSaved }: QuickTradeLoggerProps)
     </Card>
   );
 }
+

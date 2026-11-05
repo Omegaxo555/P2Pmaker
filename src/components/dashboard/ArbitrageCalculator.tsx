@@ -202,3 +202,4 @@ export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 
     </Card>
   );
 }
+
