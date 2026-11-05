@@ -14,53 +14,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El campo "prompt" es requerido' }, { status: 400 });
     }
 
-    // 1. Capa de Análisis Externo (Variables de Mercado de Binance P2P - Memoria Volátil)
     const orderbook = await getBinanceP2POrderBook(payTypes, 'VES', 'USDT');
-
-    // 2. Capa de Aprendizaje y Memoria (Grafo de Transacciones REALES de Neo4j)
     const userGraph = await getUserGraphHistory(userId);
-    const balanceReal = userGraph.cierre_diario_actual;
+    const dClose = userGraph.daily_close;
 
-    // 3. Preparar contexto transparente y estricto
     const contextPrompt = `
-[DATOS EXTERNOS EN VIVO - BINANCE P2P API (VARIABLES VOLÁTILES DE MERCADO)]
-- Mejor Tasa Compra (Ofertas de venta de USDT): ${orderbook.bestBuyPrice} VES
-- Mejor Tasa Venta (Ofertas de compra de USDT): ${orderbook.bestSellPrice} VES
-- Spread Teórico: ${orderbook.spread} VES (${orderbook.spreadPercent}%)
-- Timestamp mercado externo: ${orderbook.timestamp}
+[CAPA DE MERCADO - VARIABLES VOLÁTILES EXTERNAS (BINANCE P2P)]
+- Tasa Compra Sugerida: ${orderbook.bestBuyPrice} VES
+- Tasa Venta Sugerida: ${orderbook.bestSellPrice} VES
+- Spread Teórico: ${orderbook.spreadPercent}%
 
-[DATOS REALES DEL GRAFO DEL USUARIO (CONTABILIDAD REAL CONFIRMADA)]
-- Órdenes ejecutadas hoy confirmadas por el usuario: ${userGraph.ordenes_reales_hoy.length}
-- Ganancia Neta Real Acumulada Hoy: ${balanceReal.ganancia_neta_usdt} USDT (${balanceReal.ganancia_neta_ves} VES)
-- Capital Rotado Hoy: ${balanceReal.capital_rotado_usdt} USDT
-- Comisiones Maker Pagadas Hoy: ${balanceReal.comisiones_pagadas_usdt} USDT
-- Órdenes registradas en detalle:
-${
-  userGraph.ordenes_reales_hoy.length > 0
-    ? userGraph.ordenes_reales_hoy
-        .map(
-          (o) =>
-            `  * Orden ${o.id}: ${o.tipo} ${o.monto_cripto} USDT @ ${o.tasa_ejecutada} VES (Comisión: ${o.comision_deductiva} USDT) con Contraparte: ${o.id_contraparte}`
-        )
-        .join('\n')
-    : '  * [NINGUNA ORDEN EJECUTADA HOY]. La ganancia real actual es estrictamente 0.00 USDT.'
-}
+[CAPA DE USUARIO - HISTORIAL Y CIERRE REAL (GRAFO NEO4J)]
+- Fecha Cierre: ${dClose.fecha}
+- Capital Actual USDT: ${dClose.capital_actual_usdt} USDT
+- Ganancia Neta Real VES: ${dClose.ganancia_neta_real_ves} VES
+- Ganancia Neta Real USDT: ${dClose.ganancia_neta_real_usdt} USDT
+- Órdenes Completadas Hoy: ${dClose.ordenes_completadas_hoy}
 
-[ESTADO DE LÍMITES BANCARIOS REALES DEL USUARIO]
+[LÍMITES BANCARIOS REALES]
 ${userGraph.metodos
   .map(
     (m) =>
-      `  * ${m.banco.name}: Consumido Real = ${m.consumido_hoy} VES / Límite = ${m.banco.diario_max} VES -> DISPONIBLE = ${m.disponible_hoy} VES`
+      `* ${m.banco.name}: Límite = ${m.banco.limite_diario_maximo_ves} VES | Consumido = ${m.consumido_hoy_ves} VES | Disponible = ${m.disponible_ves} VES (Órdenes registradas: ${m.ordenes_asociadas.length})`
   )
   .join('\n')}
 
-[SOLICITUD DEL USUARIO]:
+[SOLICITUD]:
 "${prompt}"
 
-INSTRUCCIONES CLAVE:
-1. Responde de forma analítica, técnica y transparente.
-2. Si aplicas fórmulas financieras, incluye la sección Markdown "### Fuentes y Sustento de Cálculo".
-3. Concluye con el bloque JSON estructurado estricto.
+Recuerda: Responde con análisis táctico estricto y concluye con el JSON correspondiente.
 `;
 
     const model = getGeminiModel();
@@ -69,40 +51,37 @@ INSTRUCCIONES CLAVE:
 
     const { narrative, parsedJson } = parseAIResponse(textResponse);
 
-    // Si por alguna razón el modelo no generó el JSON, construir el respaldo con la contabilidad REAL
-    const fallbackData: FinancialAssistantResponse = parsedJson || {
-      control_diario_real: {
-        fecha: balanceReal.fecha,
-        ordenes_completadas: balanceReal.ordenes_totales,
-        capital_rotado_usdt: balanceReal.capital_rotado_usdt,
-        ganancia_neta_real_usdt: balanceReal.ganancia_neta_usdt,
-        ganancia_neta_real_ves: balanceReal.ganancia_neta_ves,
-        comisiones_pagadas_usdt: balanceReal.comisiones_pagadas_usdt,
+    const fallback: FinancialAssistantResponse = parsedJson || {
+      control_financiero: {
+        capital_actual_usdt: dClose.capital_actual_usdt,
+        ganancia_neta_real_ves: dClose.ganancia_neta_real_ves,
+        ganancia_neta_real_usdt: dClose.ganancia_neta_real_usdt,
+        ordenes_completadas_hoy: dClose.ordenes_completadas_hoy,
       },
-      estado_limites_banco: userGraph.metodos.map((m) => ({
-        metodo_pago: m.banco.name,
-        limite_diario_total: m.banco.diario_max,
-        limite_consumido_real: m.consumido_hoy,
-        limite_disponible: m.disponible_hoy,
+      limites_bancarios_activos: userGraph.metodos.map((m) => ({
+        banco: m.banco.name,
+        limite_diario_maximo_ves: m.banco.limite_diario_maximo_ves,
+        consumido_hoy_ves: m.consumido_hoy_ves,
+        disponible_ves: m.disponible_ves,
       })),
-      recomendacion_mercado_api: {
-        tasa_compra_sugerida: orderbook.bestBuyPrice,
-        tasa_venta_sugerida: orderbook.bestSellPrice,
-        spread_teorico_porc: orderbook.spreadPercent,
-        requiere_confirmacion_usuario: true,
+      sugerencia_maker: {
+        tasa_compra: orderbook.bestBuyPrice,
+        tasa_venta: orderbook.bestSellPrice,
+        margen_neto_estimado_porc: orderbook.spreadPercent,
+        alerta_limite_banco: userGraph.metodos.some((m) => m.disponible_ves <= 5000),
       },
     };
 
     return NextResponse.json({
       success: true,
       narrative,
-      data: fallbackData,
+      data: fallback,
       raw: textResponse,
     });
   } catch (error: any) {
     console.error('[API p2p-assistant] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Error en el motor de análisis financiero' },
+      { error: error.message || 'Error en el motor financiero' },
       { status: 500 }
     );
   }

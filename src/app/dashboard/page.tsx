@@ -20,22 +20,22 @@ export default function DashboardPage() {
     refreshGraph();
   };
 
-  // Balanza real obtenida del grafo del usuario
-  const controlDiario = {
-    fecha: graph?.cierre_diario_actual?.fecha || new Date().toISOString().split('T')[0],
-    ordenes_completadas: graph?.cierre_diario_actual?.ordenes_totales || 0,
-    capital_rotado_usdt: graph?.cierre_diario_actual?.capital_rotado_usdt || 0,
-    ganancia_neta_real_usdt: graph?.cierre_diario_actual?.ganancia_neta_usdt || 0,
-    ganancia_neta_real_ves: graph?.cierre_diario_actual?.ganancia_neta_ves || 0,
-    comisiones_pagadas_usdt: graph?.cierre_diario_actual?.comisiones_pagadas_usdt || 0,
+  const dClose = graph?.daily_close;
+
+  // Control Financiero derivado de las órdenes reales
+  const controlFinanciero = {
+    capital_actual_usdt: dClose?.capital_actual_usdt || 1000,
+    ganancia_neta_real_ves: dClose?.ganancia_neta_real_ves || 0,
+    ganancia_neta_real_usdt: dClose?.ganancia_neta_real_usdt || 0,
+    ordenes_completadas_hoy: dClose?.ordenes_completadas_hoy || 0,
   };
 
-  // Recomendación de mercado basada estrictamente en la profundidad de la API
-  const recomendacionMercado = {
-    tasa_compra_sugerida: orderbook?.bestBuyPrice || 0,
-    tasa_venta_sugerida: orderbook?.bestSellPrice || 0,
-    spread_teorico_porc: orderbook?.spreadPercent || 0,
-    requiere_confirmacion_usuario: true,
+  // Sugerencia Maker derivada de la profundidad de mercado
+  const sugerenciaMaker = {
+    tasa_compra: orderbook?.bestBuyPrice || 0,
+    tasa_venta: orderbook?.bestSellPrice || 0,
+    margen_neto_estimado_porc: orderbook?.spreadPercent || 0,
+    alerta_limite_banco: (graph?.metodos || []).some((m) => m.disponible_ves <= 5000),
   };
 
   return (
@@ -49,13 +49,13 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-white text-base tracking-tight">
-                Control Financiero & Arbitraje P2P Binance
+                Arbitraje P2P & Control Financiero
               </h1>
               <Badge variant="brand" className="text-[10px] py-0 px-1.5">USDT/VES</Badge>
               <Badge variant="success" className="text-[10px] py-0 px-1.5">Contabilidad Real</Badge>
             </div>
             <p className="text-[11px] text-muted hidden sm:block">
-              Grafo de Transacciones Reales (Neo4j) + Separación Estricta de Variables de Mercado (Binance API)
+              Grafo Jerárquico: Usuario ➔ Cierre Diario ➔ Métodos de Pago ➔ Órdenes Confirmadas
             </p>
           </div>
         </div>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
             {graph?.metodos?.map((m, idx) => (
               <div key={idx} className="bg-surface-700 border border-surface-600 px-2 py-1 rounded text-[11px]">
                 <span className="text-muted">{m.banco.name.split('-')[1]?.trim() || m.banco.name}: </span>
-                <span className="font-semibold text-white">{m.disponible_hoy.toLocaleString()} VES</span>
+                <span className="font-semibold text-white">{m.disponible_ves.toLocaleString()} VES</span>
               </div>
             ))}
           </div>
@@ -90,13 +90,13 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content Dashboard - Vista completa a ancho completo */}
+      {/* Main Content Dashboard */}
       <main className="flex-1 p-4 lg:p-6 max-w-[1750px] w-full mx-auto space-y-5">
         {/* Balanza Diaria de Ganancias y Control Financiero Real */}
-        <AnalyticsCards control={controlDiario} />
+        <AnalyticsCards control={controlFinanciero} />
 
-        {/* Variables de Mercado Externas (Binance API) */}
-        <TradeRecommendation recommendation={recomendacionMercado} />
+        {/* Sugerencia Maker (Profundidad API Binance) */}
+        <TradeRecommendation recommendation={sugerenciaMaker} />
 
         {/* Grid de 2 Columnas para Herramientas de Cálculo y Registro */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -106,14 +106,14 @@ export default function DashboardPage() {
             currentSellPrice={orderbook?.bestSellPrice}
           />
 
-          {/* Módulo de Registro: Ofertas Maker (CREATE_AD) y Órdenes Reales (EXECUTE_ORDER) */}
+          {/* Módulo de Registro de Órdenes Reales vinculadas a su método de pago */}
           <QuickTradeLogger graph={graph} onTradeSaved={handleTradeSaved} />
         </div>
 
         {/* Monitoreo de Límites y Cupos Bancarios Reales */}
         <RiskAndLimitsWidget graph={graph} />
 
-        {/* Visualizador del Grafo Neo4j (Memoria & Telemetría Real) */}
+        {/* Visualizador del Grafo Jerárquico e Interactivo */}
         <Neo4jGraphViewer />
 
         {/* Libro P2P Binance en Vivo (Variables Volátiles) */}

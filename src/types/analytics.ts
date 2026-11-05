@@ -1,36 +1,26 @@
-export interface ControlDiarioReal {
-  fecha: string;
-  ordenes_completadas: number;
-  capital_rotado_usdt: number;
-  ganancia_neta_real_usdt: number;
+export interface ControlFinanciero {
+  capital_actual_usdt: number;
   ganancia_neta_real_ves: number;
-  comisiones_pagadas_usdt: number;
+  ganancia_neta_real_usdt: number;
+  ordenes_completadas_hoy: number;
 }
 
-export interface EstadoLimiteBanco {
-  metodo_pago: string;
-  limite_diario_total: number;
-  limite_consumido_real: number;
-  limite_disponible: number;
+export interface LimiteBancarioActivo {
+  banco: string;
+  limite_diario_maximo_ves: number;
+  consumido_hoy_ves: number;
+  disponible_ves: number;
 }
 
-export interface RecomendacionMercadoAPI {
-  tasa_compra_sugerida: number;
-  tasa_venta_sugerida: number;
-  spread_teorico_porc: number;
-  requiere_confirmacion_usuario: boolean;
+export interface SugerenciaMaker {
+  tasa_compra: number;
+  tasa_venta: number;
+  margen_neto_estimado_porc: number;
+  alerta_limite_banco: boolean;
 }
 
 export interface FinancialAssistantResponse {
-  control_diario_real: ControlDiarioReal;
-  estado_limites_banco: EstadoLimiteBanco[];
-  recomendacion_mercado_api: RecomendacionMercadoAPI;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  parsedJson?: FinancialAssistantResponse | null;
-  timestamp: string;
+  control_financiero: ControlFinanciero;
+  limites_bancarios_activos: LimiteBancarioActivo[];
+  sugerencia_maker: SugerenciaMaker;
 }

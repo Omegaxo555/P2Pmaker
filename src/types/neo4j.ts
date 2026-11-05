@@ -5,60 +5,39 @@ export interface UserNode {
 
 export interface BankMethodNode {
   name: string;
-  diario_max: number;
-  consumido_hoy: number;
+  limite_diario_maximo_ves: number;
+  consumido_hoy_ves: number;
 }
 
-export interface OfertaNode {
-  id: string;
-  tipo: 'COMPRA' | 'VENTA';
-  tasa_publicada: number;
-  fiat: string;
-  cripto: string;
-  metodo_pago: string;
-  comision_maker: number;
-  timestamp: string;
+export interface DailyCloseNode {
+  id: string; // ej: daily_2026-11-05
+  fecha: string;
+  capital_actual_usdt: number;
+  ganancia_neta_real_ves: number;
+  ganancia_neta_real_usdt: number;
+  ordenes_completadas_hoy: number;
 }
 
-export interface OrdenNode {
+export interface TradeOrderNode {
   id: string;
-  id_anuncio?: string;
   tipo: 'BUY' | 'SELL';
   monto_fiat: number;
   monto_cripto: number;
   tasa_ejecutada: number;
   comision_deductiva: number;
+  metodo_pago: string;
   id_contraparte: string;
   timestamp: string;
-  exito?: boolean;
-}
-
-export interface ContraparteNode {
-  id: string;
-  ordenes_con_usuario: number;
-  liberacion_rapida: boolean;
-  sospechosa: boolean;
-}
-
-export interface CierreDiarioNode {
-  fecha: string;
-  ganancia_neta_ves: number;
-  ganancia_neta_usdt: number;
-  comisiones_totales_ves: number;
-  comisiones_pagadas_usdt: number;
-  ordenes_totales: number;
-  capital_rotado_usdt: number;
 }
 
 export interface UserGraphSummary {
   user: UserNode;
+  daily_close: DailyCloseNode;
   metodos: Array<{
     banco: BankMethodNode;
-    disponible_hoy: number;
-    consumido_hoy: number;
-    tiempo_promedio_min: number;
+    disponible_ves: number;
+    consumido_hoy_ves: number;
+    ordenes_asociadas: TradeOrderNode[];
   }>;
-  ordenes_reales_hoy: OrdenNode[];
-  cierre_diario_actual: CierreDiarioNode;
-  contrapartes: ContraparteNode[];
+  todas_ordenes_hoy: TradeOrderNode[];
 }
