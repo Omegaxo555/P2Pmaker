@@ -3,6 +3,7 @@ import { getGeminiModel } from '@/lib/ai/gemini';
 import { parseAIResponse } from '@/lib/ai/parser';
 import { getBinanceP2POrderBook } from '@/lib/binance/p2p';
 import { getUserGraphHistory } from '@/lib/neo4j/queries';
+import type { FinancialAssistantResponse } from '@/types/analytics';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,68 +14,96 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El campo "prompt" es requerido' }, { status: 400 });
     }
 
-    // 1. Obtener datos en tiempo real de Binance P2P
+    // 1. Capa de Análisis Externo (Variables de Mercado de Binance P2P - Memoria Volátil)
     const orderbook = await getBinanceP2POrderBook(payTypes, 'VES', 'USDT');
 
-    // 2. Consultar memoria y restricciones del Grafo (Neo4j)
+    // 2. Capa de Aprendizaje y Memoria (Grafo de Transacciones REALES de Neo4j)
     const userGraph = await getUserGraphHistory(userId);
+    const balanceReal = userGraph.cierre_diario_actual;
 
-    // 3. Preparar contexto para P2P Flow AI
+    // 3. Preparar contexto transparente y estricto
     const contextPrompt = `
-[CONTEXTO EN VIVO PROPORCIONADO POR LAS HERRAMIENTAS]
+[DATOS EXTERNOS EN VIVO - BINANCE P2P API (VARIABLES VOLÁTILES DE MERCADO)]
+- Mejor Tasa Compra (Ofertas de venta de USDT): ${orderbook.bestBuyPrice} VES
+- Mejor Tasa Venta (Ofertas de compra de USDT): ${orderbook.bestSellPrice} VES
+- Spread Teórico: ${orderbook.spread} VES (${orderbook.spreadPercent}%)
+- Timestamp mercado externo: ${orderbook.timestamp}
 
-1. MERCADO BINANCE P2P ACTUAL (USDT/VES):
-- Mejor precio Compra (Anuncios de venta de USDT): ${orderbook.bestBuyPrice} VES
-- Mejor precio Venta (Anuncios de compra de USDT): ${orderbook.bestSellPrice} VES
-- Spread actual: ${orderbook.spread} VES (${orderbook.spreadPercent}%)
-- Precio medio: ${orderbook.midPrice} VES
-- Top 3 Vendedores (para comprarles USDT):
-${orderbook.buyOrders.slice(0, 3).map((o, idx) => `  ${idx + 1}. ${o.advertiser.nickName} | Tasa: ${o.adv.price} VES | Min/Max: ${o.adv.minSingleTransAmount} - ${o.adv.maxSingleTransAmount} VES | Finalización: ${(o.advertiser.monthFinishRate * 100).toFixed(1)}% | Métodos: ${o.adv.tradeMethods.map(m => m.tradeMethodName).join(', ')}`).join('\n')}
-- Top 3 Compradores (para venderles USDT):
-${orderbook.sellOrders.slice(0, 3).map((o, idx) => `  ${idx + 1}. ${o.advertiser.nickName} | Tasa: ${o.adv.price} VES | Min/Max: ${o.adv.minSingleTransAmount} - ${o.adv.maxSingleTransAmount} VES | Finalización: ${(o.advertiser.monthFinishRate * 100).toFixed(1)}% | Métodos: ${o.adv.tradeMethods.map(m => m.tradeMethodName).join(', ')}`).join('\n')}
+[DATOS REALES DEL GRAFO DEL USUARIO (CONTABILIDAD REAL CONFIRMADA)]
+- Órdenes ejecutadas hoy confirmadas por el usuario: ${userGraph.ordenes_reales_hoy.length}
+- Ganancia Neta Real Acumulada Hoy: ${balanceReal.ganancia_neta_usdt} USDT (${balanceReal.ganancia_neta_ves} VES)
+- Capital Rotado Hoy: ${balanceReal.capital_rotado_usdt} USDT
+- Comisiones Maker Pagadas Hoy: ${balanceReal.comisiones_pagadas_usdt} USDT
+- Órdenes registradas en detalle:
+${
+  userGraph.ordenes_reales_hoy.length > 0
+    ? userGraph.ordenes_reales_hoy
+        .map(
+          (o) =>
+            `  * Orden ${o.id}: ${o.tipo} ${o.monto_cripto} USDT @ ${o.tasa_ejecutada} VES (Comisión: ${o.comision_deductiva} USDT) con Contraparte: ${o.id_contraparte}`
+        )
+        .join('\n')
+    : '  * [NINGUNA ORDEN EJECUTADA HOY]. La ganancia real actual es estrictamente 0.00 USDT.'
+}
 
-2. PERFIL DE GRAFO Y LÍMITES BANCARIOS DEL USUARIO (${userGraph.user.name} - ID: ${userGraph.user.id}):
-- Métodos de pago y disponibilidad:
-${userGraph.metodos.map(m => `  * ${m.banco.name} -> Disponible hoy: ${m.disponible_hoy} VES (Consumido: ${m.banco.consumido_hoy}/${m.banco.diario_max} VES) | Score Éxito: ${(m.preferencia.peso_exito * 100).toFixed(0)}% | Tiempo prom: ${m.preferencia.tiempo_promedio_min} min`).join('\n')}
-- Contrapartes sospechosas o bloqueadas en el grafo: ${userGraph.contrapartes_bloqueadas.length > 0 ? userGraph.contrapartes_bloqueadas.join(', ') : 'Ninguna'}
-- Últimos trades registrados: ${userGraph.trades_recientes.length} trades completados recientemente.
+[ESTADO DE LÍMITES BANCARIOS REALES DEL USUARIO]
+${userGraph.metodos
+  .map(
+    (m) =>
+      `  * ${m.banco.name}: Consumido Real = ${m.consumido_hoy} VES / Límite = ${m.banco.diario_max} VES -> DISPONIBLE = ${m.disponible_hoy} VES`
+  )
+  .join('\n')}
 
 [SOLICITUD DEL USUARIO]:
 "${prompt}"
 
-Recuerda cumplir estrictamente con responder:
-1. Análisis táctico en lenguaje natural.
-2. El bloque JSON estructurado con \`analytics\`, \`grafica_rendimiento\` y \`recomendacion_trade\`.
+INSTRUCCIONES CLAVE:
+1. Responde de forma analítica, técnica y transparente.
+2. Si aplicas fórmulas financieras, incluye la sección Markdown "### Fuentes y Sustento de Cálculo".
+3. Concluye con el bloque JSON estructurado estricto.
 `;
 
-    // 4. Invocar a Gemini con el system prompt y datos en vivo
     const model = getGeminiModel();
     const result = await model.generateContent(contextPrompt);
     const textResponse = result.response.text();
 
-    // 5. Parsear la respuesta dividida en narrativa + JSON para componentes React
     const { narrative, parsedJson } = parseAIResponse(textResponse);
+
+    // Si por alguna razón el modelo no generó el JSON, construir el respaldo con la contabilidad REAL
+    const fallbackData: FinancialAssistantResponse = parsedJson || {
+      control_diario_real: {
+        fecha: balanceReal.fecha,
+        ordenes_completadas: balanceReal.ordenes_totales,
+        capital_rotado_usdt: balanceReal.capital_rotado_usdt,
+        ganancia_neta_real_usdt: balanceReal.ganancia_neta_usdt,
+        ganancia_neta_real_ves: balanceReal.ganancia_neta_ves,
+        comisiones_pagadas_usdt: balanceReal.comisiones_pagadas_usdt,
+      },
+      estado_limites_banco: userGraph.metodos.map((m) => ({
+        metodo_pago: m.banco.name,
+        limite_diario_total: m.banco.diario_max,
+        limite_consumido_real: m.consumido_hoy,
+        limite_disponible: m.disponible_hoy,
+      })),
+      recomendacion_mercado_api: {
+        tasa_compra_sugerida: orderbook.bestBuyPrice,
+        tasa_venta_sugerida: orderbook.bestSellPrice,
+        spread_teorico_porc: orderbook.spreadPercent,
+        requiere_confirmacion_usuario: true,
+      },
+    };
 
     return NextResponse.json({
       success: true,
       narrative,
-      data: parsedJson,
+      data: fallbackData,
       raw: textResponse,
-      marketSnapshot: {
-        bestBuy: orderbook.bestBuyPrice,
-        bestSell: orderbook.bestSellPrice,
-        spread: orderbook.spread,
-        timestamp: orderbook.timestamp,
-      },
     });
   } catch (error: any) {
     console.error('[API p2p-assistant] Error:', error);
     return NextResponse.json(
-      {
-        error: error.message || 'Error interno procesando asistente P2P',
-      },
+      { error: error.message || 'Error en el motor de análisis financiero' },
       { status: 500 }
     );
   }
 }
-

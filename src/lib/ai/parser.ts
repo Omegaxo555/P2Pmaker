@@ -1,8 +1,8 @@
-import type { AIResponsePayload } from '@/types/analytics';
+import type { FinancialAssistantResponse } from '@/types/analytics';
 
 export function parseAIResponse(rawResponse: string): {
   narrative: string;
-  parsedJson: AIResponsePayload | null;
+  parsedJson: FinancialAssistantResponse | null;
 } {
   const jsonRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
   const match = rawResponse.match(jsonRegex);
@@ -18,17 +18,16 @@ export function parseAIResponse(rawResponse: string): {
   const narrative = rawResponse.replace(jsonRegex, '').trim();
 
   try {
-    const parsed = JSON.parse(jsonString) as AIResponsePayload;
+    const parsed = JSON.parse(jsonString) as FinancialAssistantResponse;
     return {
       narrative,
       parsedJson: parsed,
     };
   } catch (error) {
-    console.error('[Parser] Error parseando JSON de Gemini:', error);
+    console.error('[Parser] Error parseando JSON estructurado:', error);
     return {
       narrative,
       parsedJson: null,
     };
   }
 }
-

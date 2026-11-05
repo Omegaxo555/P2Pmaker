@@ -286,3 +286,4 @@ export function Neo4jGraphViewer() {
     </Card>
   );
 }
+

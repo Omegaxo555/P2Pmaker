@@ -1,37 +1,36 @@
-export interface Analytics {
-  capital_inicial_usdt: number;
-  ganancia_acumulada_usdt: number;
-  vueltas_completadas: number;
-  spread_promedio_porc: number;
+export interface ControlDiarioReal {
+  fecha: string;
+  ordenes_completadas: number;
+  capital_rotado_usdt: number;
+  ganancia_neta_real_usdt: number;
+  ganancia_neta_real_ves: number;
+  comisiones_pagadas_usdt: number;
 }
 
-export interface GraficaRendimiento {
-  eje_x_labels: string[];
-  serie_capital: number[];
-  serie_ganancias: number[];
+export interface EstadoLimiteBanco {
+  metodo_pago: string;
+  limite_diario_total: number;
+  limite_consumido_real: number;
+  limite_disponible: number;
 }
 
-export type AccionSugerida = 'COMPRAR_MAKER' | 'VENDER_MAKER' | 'ESPERAR';
-
-export interface RecomendacionTrade {
-  accion_sugerida: AccionSugerida;
-  tasa_sugerida: number;
-  metodo_pago_optimo: string;
-  margen_neto_estimado_porc: number;
-  razon_tactica: string;
+export interface RecomendacionMercadoAPI {
+  tasa_compra_sugerida: number;
+  tasa_venta_sugerida: number;
+  spread_teorico_porc: number;
+  requiere_confirmacion_usuario: boolean;
 }
 
-export interface AIResponsePayload {
-  analytics: Analytics;
-  grafica_rendimiento: GraficaRendimiento;
-  recomendacion_trade: RecomendacionTrade;
+export interface FinancialAssistantResponse {
+  control_diario_real: ControlDiarioReal;
+  estado_limites_banco: EstadoLimiteBanco[];
+  recomendacion_mercado_api: RecomendacionMercadoAPI;
 }
 
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  parsedJson?: AIResponsePayload | null;
+  parsedJson?: FinancialAssistantResponse | null;
   timestamp: string;
 }
-

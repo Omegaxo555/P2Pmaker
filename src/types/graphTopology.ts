@@ -21,3 +21,4 @@ export interface GraphTopology {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
+

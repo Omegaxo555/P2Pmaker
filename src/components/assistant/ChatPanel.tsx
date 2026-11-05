@@ -4,17 +4,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { MessageBubble } from './MessageBubble';
-import type { ChatMessage, AIResponsePayload } from '@/types/analytics';
+import type { ChatMessage, FinancialAssistantResponse } from '@/types/analytics';
 
 interface ChatPanelProps {
-  onNewAIResponse?: (data: AIResponsePayload) => void;
+  onNewAIResponse?: (data: FinancialAssistantResponse) => void;
 }
 
 const QUICK_PROMPTS = [
-  '¿Cuál es la tasa de compra máxima para un margen del 1.5%?',
-  'Analiza el riesgo de mis métodos de pago hoy según el grafo',
-  '¿Qué acción táctica debo tomar ahora en Binance USDT/VES?',
-  'Recomienda filtros seguros de contraparte para esta hora',
+  'Genera el cierre y balanza diaria de ganancias real de hoy',
+  '¿Cuál es el margen neto real de mis órdenes confirmadas?',
+  'Revisa el estado de límites bancarios consumidos en mi grafo',
+  'Sugiere puntos de entrada y salida basados en la profundidad de Binance',
 ];
 
 export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
@@ -22,8 +22,12 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
     {
       id: 'welcome',
       role: 'assistant',
-      content:
-        '¡Saludos Paulo! Soy P2P Flow AI. Tengo conexión directa con el libro de órdenes USDT/VES de Binance y tu base de datos de grafos en Neo4j. ¿Qué analizamos hoy?',
+      content: `### Asistente de Arbitraje y Control Financiero P2P Binance
+Sistema iniciado con separación estricta de fuentes:
+- **Capa de Aprendizaje (Grafo Neo4j)**: Conectada a tu registro real de órdenes, comisiones y límites bancarios. No se generan ganancias ficticias.
+- **Capa de Análisis Externo (Binance P2P)**: Variables de mercado volátiles en tiempo real.
+
+¿En qué análisis u operación puedo asistirte hoy?`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -86,7 +90,7 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
         {
           id: `err_${Date.now()}`,
           role: 'assistant',
-          content: `⚠️ Error de conexión: ${error.message}. Asegúrate de haber configurado tu GEMINI_API_KEY.`,
+          content: `⚠️ Error de conexión: ${error.message}. Verifica tu configuración de GEMINI_API_KEY en .env.local`,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -103,16 +107,16 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
   };
 
   return (
-    <Card className="flex flex-col h-[600px] border-surface-600">
+    <Card className="flex flex-col h-[650px] border-surface-600">
       {/* Encabezado */}
-      <div className="flex items-center justify-between border-b border-surface-600/60 pb-3 mb-3">
+      <div className="flex items-center justify-between border-b border-surface-600/70 pb-3 mb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-brand/20 border border-brand/50 flex items-center justify-center text-brand font-bold text-sm">
-            AI
+            📊
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">P2P Flow AI - Asistente en Vivo</h3>
-            <p className="text-[11px] text-muted">RL + Memoria en Grafo Neo4j + Binance API</p>
+            <h3 className="text-sm font-bold text-white">Asistente de Control Financiero</h3>
+            <p className="text-[11px] text-muted">Contabilidad Real P2P Binance • Cero Datos Simulados</p>
           </div>
         </div>
       </div>
@@ -125,7 +129,7 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
         {isLoading && (
           <div className="flex items-center gap-2 text-xs text-muted py-2 px-1">
             <Spinner size="sm" />
-            <span>Consultando Binance P2P, verificando Neo4j y calculando spread...</span>
+            <span>Consultando datos reales del grafo y profundidad de Binance...</span>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -152,7 +156,7 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pregúntale a P2P Flow AI (Ej: ¿A qué tasa debo publicar compra para Banesco con 1.8% de margen?)..."
+          placeholder="Escribe tu consulta financiera o solicitud de balance..."
           className="flex-1 bg-surface-900 border border-surface-600 rounded-lg p-2.5 text-xs text-white placeholder-muted focus:outline-none focus:border-brand resize-none"
         />
         <button
@@ -166,4 +170,3 @@ export function ChatPanel({ onNewAIResponse }: ChatPanelProps) {
     </Card>
   );
 }
-
