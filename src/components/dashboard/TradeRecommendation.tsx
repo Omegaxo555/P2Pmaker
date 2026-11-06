@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { formatVES } from '@/lib/utils/currency';
+import { formatPercent, formatVES } from '@/lib/utils/currency';
 import type { SugerenciaMaker } from '@/types/analytics';
 
 interface TradeRecommendationProps {
@@ -47,11 +47,13 @@ export function TradeRecommendation({ recommendation }: TradeRecommendationProps
         </div>
 
         <div>
-          <span className="text-xs text-muted block mb-1">Margen Neto Estimado</span>
+          <span className="text-xs text-muted block mb-1">Spread observado (bruto)</span>
           <span className="text-xl font-bold text-brand">
-            {rec?.margen_neto_estimado_porc !== undefined ? `+${rec.margen_neto_estimado_porc.toFixed(2)}%` : '---'}
+            {rec?.margen_neto_estimado_porc !== undefined
+              ? formatPercent(rec.margen_neto_estimado_porc)
+              : '---'}
           </span>
-          <span className="text-[10px] text-muted block mt-0.5">Spread competitivo Maker</span>
+          <span className="text-[10px] text-muted block mt-0.5">No descuenta comisiones ni costos</span>
         </div>
       </div>
 

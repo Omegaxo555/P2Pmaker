@@ -1,5 +1,11 @@
 import axios from 'axios';
-import type { BinanceP2PRequest, BinanceP2PResponse, BinanceP2PItem, OrderBookSummary } from './types';
+import type {
+  BinanceP2PRequest,
+  BinanceP2PResponse,
+  BinanceP2PItem,
+  OrderBookSummary,
+  PaymentMethodMarketRange,
+} from './types';
 
 const BINANCE_P2P_URL = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
 
@@ -48,7 +54,9 @@ export async function fetchBinanceP2P(
     return [];
   } catch (error) {
     console.error(`[BinanceP2P] Error fetching ${tradeType} for ${asset}/${fiat}:`, error);
-    return [];
+    throw new Error(`No se pudo consultar el mercado P2P de Binance (${tradeType} ${asset}/${fiat})`, {
+      cause: error,
+    });
   }
 }
 
@@ -58,8 +66,8 @@ export async function getBinanceP2POrderBook(
   asset = 'USDT'
 ): Promise<OrderBookSummary> {
   const [buyOrders, sellOrders] = await Promise.all([
-    fetchBinanceP2P('BUY', payTypes, 10, fiat, asset),
-    fetchBinanceP2P('SELL', payTypes, 10, fiat, asset),
+    fetchBinanceP2P('BUY', payTypes, 50, fiat, asset),
+    fetchBinanceP2P('SELL', payTypes, 50, fiat, asset),
   ]);
 
   const bestBuyPrice = buyOrders.length > 0 ? parseFloat(buyOrders[0].adv.price) : 0;
@@ -67,6 +75,31 @@ export async function getBinanceP2POrderBook(
   const spread = bestSellPrice > 0 && bestBuyPrice > 0 ? bestSellPrice - bestBuyPrice : 0;
   const spreadPercent = bestBuyPrice > 0 ? (spread / bestBuyPrice) * 100 : 0;
   const midPrice = bestBuyPrice > 0 && bestSellPrice > 0 ? (bestBuyPrice + bestSellPrice) / 2 : 0;
+  const methods = new Map<string, PaymentMethodMarketRange>();
+
+  const addMethods = (orders: BinanceP2PItem[], side: 'buy' | 'sell') => {
+    for (const order of orders) {
+      const min = Number(order.adv.minSingleTransAmount);
+      const max = Number(order.adv.maxSingleTransAmount);
+      for (const method of order.adv.tradeMethods) {
+        const range = methods.get(method.tradeMethodName) || {
+          name: method.tradeMethodName,
+          buy: { min: null, max: null, ads: 0 },
+          sell: { min: null, max: null, ads: 0 },
+          totalAds: 0,
+        };
+        const sideRange = range[side];
+        sideRange.min = sideRange.min === null ? min : Math.min(sideRange.min, min);
+        sideRange.max = sideRange.max === null ? max : Math.max(sideRange.max, max);
+        sideRange.ads += 1;
+        range.totalAds += 1;
+        methods.set(method.tradeMethodName, range);
+      }
+    }
+  };
+
+  addMethods(buyOrders, 'buy');
+  addMethods(sellOrders, 'sell');
 
   return {
     bestBuyPrice,
@@ -76,7 +109,7 @@ export async function getBinanceP2POrderBook(
     midPrice: Number(midPrice.toFixed(2)),
     buyOrders,
     sellOrders,
+    paymentMethods: Array.from(methods.values()).sort((a, b) => a.name.localeCompare(b.name)),
     timestamp: new Date().toISOString(),
   };
 }
-

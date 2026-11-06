@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
     const history = await getUserGraphHistory(userId);
     return NextResponse.json(history);
   } catch (error: any) {
+    console.error('[Neo4j user API] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Error consultando historial de grafo del usuario' },
       { status: 500 }
     );
   }
 }
-

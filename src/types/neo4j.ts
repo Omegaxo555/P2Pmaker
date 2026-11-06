@@ -5,7 +5,7 @@ export interface UserNode {
 
 export interface BankMethodNode {
   name: string;
-  limite_diario_maximo_ves: number;
+  limite_diario_maximo_ves: number | null;
   consumido_hoy_ves: number;
 }
 
@@ -28,14 +28,16 @@ export interface TradeOrderNode {
   metodo_pago: string;
   id_contraparte: string;
   timestamp: string;
+  fecha_operacion?: string;
 }
 
 export interface UserGraphSummary {
   user: UserNode;
   daily_close: DailyCloseNode;
+  storage: 'neo4j' | 'memory';
   metodos: Array<{
     banco: BankMethodNode;
-    disponible_ves: number;
+    disponible_ves: number | null;
     consumido_hoy_ves: number;
     ordenes_asociadas: TradeOrderNode[];
   }>;

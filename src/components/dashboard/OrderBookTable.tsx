@@ -9,9 +9,10 @@ import type { OrderBookSummary } from '@/lib/binance/types';
 interface OrderBookTableProps {
   orderbook?: OrderBookSummary | null;
   isLoading?: boolean;
+  isError?: boolean;
 }
 
-export function OrderBookTable({ orderbook, isLoading }: OrderBookTableProps) {
+export function OrderBookTable({ orderbook, isLoading, isError }: OrderBookTableProps) {
   const [tab, setTab] = useState<'BUY' | 'SELL'>('BUY');
 
   const orders = tab === 'BUY' ? orderbook?.buyOrders || [] : orderbook?.sellOrders || [];
@@ -50,6 +51,11 @@ export function OrderBookTable({ orderbook, isLoading }: OrderBookTableProps) {
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-muted">
             Actualizando libro de órdenes...
+          </div>
+        ) : isError ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-xs text-danger">
+            <span>No se pudo consultar Binance P2P.</span>
+            <span className="text-muted">Comprueba la conexión e intenta actualizar de nuevo.</span>
           </div>
         ) : orders.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted">
@@ -116,4 +122,3 @@ export function OrderBookTable({ orderbook, isLoading }: OrderBookTableProps) {
     </Card>
   );
 }
-

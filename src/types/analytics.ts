@@ -7,9 +7,9 @@ export interface ControlFinanciero {
 
 export interface LimiteBancarioActivo {
   banco: string;
-  limite_diario_maximo_ves: number;
+  limite_diario_maximo_ves: number | null;
   consumido_hoy_ves: number;
-  disponible_ves: number;
+  disponible_ves: number | null;
 }
 
 export interface SugerenciaMaker {

@@ -78,6 +78,13 @@ export interface OrderBookSummary {
   midPrice: number;
   buyOrders: BinanceP2PItem[];
   sellOrders: BinanceP2PItem[];
+  paymentMethods: PaymentMethodMarketRange[];
   timestamp: string;
 }
 
+export interface PaymentMethodMarketRange {
+  name: string;
+  buy: { min: number | null; max: number | null; ads: number };
+  sell: { min: number | null; max: number | null; ads: number };
+  totalAds: number;
+}

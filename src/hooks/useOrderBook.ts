@@ -3,7 +3,12 @@
 import useSWR from 'swr';
 import type { OrderBookSummary } from '@/lib/binance/types';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error HTTP ${res.status}`);
+  return data;
+};
 
 export function useOrderBook(payTypes: string[] = []) {
   const query = payTypes.length > 0 ? `?payTypes=${payTypes.join(',')}` : '';
@@ -11,7 +16,7 @@ export function useOrderBook(payTypes: string[] = []) {
     `/api/binance/orderbook${query}`,
     fetcher,
     {
-      refreshInterval: 15000, // actualizar cada 15 seg
+      refreshInterval: 30000,
       revalidateOnFocus: true,
     }
   );
@@ -23,4 +28,3 @@ export function useOrderBook(payTypes: string[] = []) {
     refresh: mutate,
   };
 }
-

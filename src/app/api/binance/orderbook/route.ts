@@ -12,10 +12,10 @@ export async function GET(req: NextRequest) {
     const orderbook = await getBinanceP2POrderBook(payTypes, fiat, asset);
     return NextResponse.json(orderbook);
   } catch (error: any) {
+    console.error('[Binance orderbook API] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Error consultando orderbook de Binance' },
       { status: 500 }
     );
   }
 }
-

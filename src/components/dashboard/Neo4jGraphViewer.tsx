@@ -4,12 +4,20 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
+import { QuickTradeLogger } from '@/components/dashboard/QuickTradeLogger';
 import { useGraphTopology } from '@/hooks/useGraphTopology';
 import type { GraphNode, GraphEdge } from '@/types/graphTopology';
+import type { TradeOrderNode } from '@/types/neo4j';
 
-export function Neo4jGraphViewer() {
+interface Neo4jGraphViewerProps {
+  orders: TradeOrderNode[];
+  onOrderSaved?: () => void;
+}
+
+export function Neo4jGraphViewer({ orders, onOrderSaved }: Neo4jGraphViewerProps) {
   const { topology, isLoading, refresh } = useGraphTopology();
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [editingOrder, setEditingOrder] = useState<TradeOrderNode | null>(null);
   const [filterType, setFilterType] = useState<string>('ALL');
 
   // Nivel de Expansión Progresiva del Grafo (0: Solo Usuario, 1: +DailyClose, 2: +BankMethods, 3: +TradeOrders)
@@ -468,6 +476,19 @@ export function Neo4jGraphViewer() {
                     <p className="text-xs text-brand font-medium">{selectedNode.sub}</p>
                   </div>
 
+                  {selectedNode.label === 'TradeOrder' &&
+                    orders.some((order) => order.id === selectedNode.id) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingOrder(orders.find((order) => order.id === selectedNode.id) || null)
+                      }
+                      className="w-full rounded-lg bg-brand px-3 py-2 text-xs font-bold text-surface-900 transition-colors hover:bg-brand-hover"
+                    >
+                      Editar datos de esta orden
+                    </button>
+                  )}
+
                   <div className="bg-surface-800 p-3 rounded-lg border border-surface-700 space-y-1.5 text-xs max-h-[250px] overflow-y-auto">
                     <span className="text-[10px] text-muted block font-semibold uppercase mb-1">
                       Propiedades Cypher en Memoria:
@@ -508,6 +529,40 @@ export function Neo4jGraphViewer() {
               <span>{visibleNodes.length} de {rawNodes.length} Nodos</span>
               <span>{visibleEdges.length} Relaciones</span>
             </div>
+          </div>
+        </div>
+      )}
+      {editingOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="graph-order-editor-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setEditingOrder(null);
+          }}
+        >
+          <div className="w-full max-w-4xl">
+            <div className="mb-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setEditingOrder(null)}
+                className="rounded-lg border border-surface-600 bg-surface-800 px-3 py-1.5 text-xs text-white hover:bg-surface-700"
+                aria-label="Cerrar editor de orden"
+              >
+                Cerrar
+              </button>
+            </div>
+            <div id="graph-order-editor-title" className="sr-only">Editar orden</div>
+            <QuickTradeLogger
+              key={editingOrder.id}
+              initialOrder={editingOrder}
+              onTradeSaved={() => {
+                setEditingOrder(null);
+                onOrderSaved?.();
+              }}
+              onCancelEdit={() => setEditingOrder(null)}
+            />
           </div>
         </div>
       )}

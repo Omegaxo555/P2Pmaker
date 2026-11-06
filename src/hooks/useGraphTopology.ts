@@ -3,7 +3,12 @@
 import useSWR from 'swr';
 import type { GraphTopology } from '@/types/graphTopology';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error HTTP ${res.status}`);
+  return data;
+};
 
 export function useGraphTopology(userId?: string) {
   const query = userId ? `?userId=${userId}` : '';
@@ -22,4 +27,3 @@ export function useGraphTopology(userId?: string) {
     refresh: mutate,
   };
 }
-

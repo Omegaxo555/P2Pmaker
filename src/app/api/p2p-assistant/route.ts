@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
 - Ganancia Neta Real USDT: ${dClose.ganancia_neta_real_usdt} USDT
 - Órdenes Completadas Hoy: ${dClose.ordenes_completadas_hoy}
 
-[LÍMITES BANCARIOS REALES]
+ [CONSUMO Y TOPES CONFIGURADOS POR MÉTODO]
 ${userGraph.metodos
   .map(
     (m) =>
-      `* ${m.banco.name}: Límite = ${m.banco.limite_diario_maximo_ves} VES | Consumido = ${m.consumido_hoy_ves} VES | Disponible = ${m.disponible_ves} VES (Órdenes registradas: ${m.ordenes_asociadas.length})`
+      `* ${m.banco.name}: Límite = ${m.banco.limite_diario_maximo_ves ?? 'Sin configurar'} VES | Consumido = ${m.consumido_hoy_ves} VES | Disponible = ${m.disponible_ves ?? 'Sin configurar'} VES (Órdenes registradas: ${m.ordenes_asociadas.length})`
   )
   .join('\n')}
 
@@ -68,7 +68,9 @@ Recuerda: Responde con análisis táctico estricto y concluye con el JSON corres
         tasa_compra: orderbook.bestBuyPrice,
         tasa_venta: orderbook.bestSellPrice,
         margen_neto_estimado_porc: orderbook.spreadPercent,
-        alerta_limite_banco: userGraph.metodos.some((m) => m.disponible_ves <= 5000),
+        alerta_limite_banco: userGraph.metodos.some(
+          (m) => m.disponible_ves !== null && m.disponible_ves <= 5000
+        ),
       },
     };
 

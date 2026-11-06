@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
     const topology = await getGraphTopology(userId);
     return NextResponse.json(topology);
   } catch (error: any) {
+    console.error('[Neo4j topology API] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Error al obtener la topología del grafo' },
       { status: 500 }
     );
   }
 }
-

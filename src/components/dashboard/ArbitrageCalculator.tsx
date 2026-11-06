@@ -14,24 +14,23 @@ interface ArbitrageCalculatorProps {
 export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 }: ArbitrageCalculatorProps) {
   const [capitalUSDT, setCapitalUSDT] = useState<number>(100);
   const [margenDeseado, setMargenDeseado] = useState<number>(1.5);
-  const [tasaVenta, setTasaVenta] = useState<number>(currentSellPrice || 1025);
-  const [tasaCompraManual, setTasaCompraManual] = useState<number>(currentBuyPrice || 1000);
+  const [comisionPorcentaje, setComisionPorcentaje] = useState<number>(0.25);
+  const [tasaVenta, setTasaVenta] = useState<number>(currentSellPrice || 0);
+  const [tasaCompraManual, setTasaCompraManual] = useState<number>(currentBuyPrice || 0);
   const [modo, setModo] = useState<'AUTO_MAKER' | 'MANUAL'>('AUTO_MAKER');
 
-  // Si actualizan precios desde el book y no ha editado
   React.useEffect(() => {
-    if (currentSellPrice > 0 && tasaVenta === 1025) {
+    if (currentSellPrice > 0 && tasaVenta === 0) {
       setTasaVenta(currentSellPrice);
     }
-    if (currentBuyPrice > 0 && tasaCompraManual === 1000) {
+    if (currentBuyPrice > 0 && tasaCompraManual === 0) {
       setTasaCompraManual(currentBuyPrice);
     }
   }, [currentSellPrice, currentBuyPrice]);
 
-  const comisionMaker = 0.0025; // 0.25%
+  const comisionMaker = comisionPorcentaje / 100;
 
-  // Tasa de compra según la fórmula oficial de arbitraje Maker
-  const tasaCompraOptima = calcularTasaCompraMaxima(tasaVenta, margenDeseado);
+  const tasaCompraOptima = calcularTasaCompraMaxima(tasaVenta, margenDeseado, comisionMaker);
   const tasaCompraEfectiva = modo === 'AUTO_MAKER' ? tasaCompraOptima : tasaCompraManual;
 
   // Cálculos de Ciclo Completo (Vuelta Maker):
@@ -60,7 +59,7 @@ export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 
           <div>
             <h3 className="text-sm font-bold text-white">Calculadora Táctica de Ciclo Maker</h3>
             <p className="text-[11px] text-muted">
-              Simulador exacto con comisiones Binance P2P (0.25% entrada + 0.25% salida)
+              Estimación editable: introduce la comisión real que aplique a tu operación.
             </p>
           </div>
         </div>
@@ -84,7 +83,7 @@ export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Input Capital */}
         <div>
           <label className="text-[11px] font-semibold text-muted block mb-1">
@@ -157,6 +156,24 @@ export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 
             </>
           )}
         </div>
+
+        <div>
+          <label className="text-[11px] font-semibold text-muted block mb-1">
+            Comisión por lado (%)
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={comisionPorcentaje}
+              onChange={(e) => setComisionPorcentaje(Math.min(100, Math.max(0, Number(e.target.value))))}
+              className="w-full bg-surface-900 border border-surface-600 rounded-lg py-1.5 px-3 text-sm text-white font-semibold focus:border-brand focus:outline-none"
+            />
+            <span className="absolute right-3 top-2 text-xs text-muted">%</span>
+          </div>
+        </div>
       </div>
 
       {/* Resultados de la Vuelta */}
@@ -202,4 +219,3 @@ export function ArbitrageCalculator({ currentSellPrice = 0, currentBuyPrice = 0 
     </Card>
   );
 }
-

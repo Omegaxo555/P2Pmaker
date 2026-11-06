@@ -11,7 +11,7 @@ interface AnalyticsCardsProps {
 
 export function AnalyticsCards({ control }: AnalyticsCardsProps) {
   const data: ControlFinanciero = control || {
-    capital_actual_usdt: 1000,
+    capital_actual_usdt: 0,
     ganancia_neta_real_ves: 0,
     ganancia_neta_real_usdt: 0,
     ordenes_completadas_hoy: 0,
@@ -24,13 +24,13 @@ export function AnalyticsCards({ control }: AnalyticsCardsProps) {
       {/* Capital Actual en USDT */}
       <Card className="flex flex-col justify-between">
         <span className="text-xs uppercase tracking-wider text-muted font-semibold">
-          Capital Actual
+          Capital base + P&L estimado
         </span>
         <div className="mt-2 flex items-baseline justify-between">
           <span className="text-2xl font-bold text-white tracking-tight">
             {formatUSDT(data.capital_actual_usdt)}
           </span>
-          <span className="text-xs text-muted">Base</span>
+          <span className="text-xs text-muted">Base configurada</span>
         </div>
       </Card>
 
@@ -44,7 +44,7 @@ export function AnalyticsCards({ control }: AnalyticsCardsProps) {
       >
         <div className="flex items-center justify-between">
           <span className="text-xs uppercase tracking-wider text-muted font-semibold">
-            Ganancia Neta Real (USDT)
+            P&L estimado (USDT)
           </span>
           <span className="text-[10px] bg-surface-700 px-1.5 py-0.5 rounded text-success font-bold">
             P&L Hoy
@@ -59,14 +59,14 @@ export function AnalyticsCards({ control }: AnalyticsCardsProps) {
             {data.ganancia_neta_real_usdt >= 0 ? '+' : ''}
             {formatUSDT(data.ganancia_neta_real_usdt)}
           </span>
-          <span className="text-[10px] text-muted">Contabilidad Real</span>
+          <span className="text-[10px] text-muted">Órdenes registradas</span>
         </div>
       </Card>
 
       {/* Ganancia Neta Real en VES */}
       <Card className="flex flex-col justify-between">
         <span className="text-xs uppercase tracking-wider text-muted font-semibold">
-          Ganancia Neta Real (VES)
+          P&L estimado (VES)
         </span>
         <div className="mt-2 flex items-baseline justify-between">
           <span
